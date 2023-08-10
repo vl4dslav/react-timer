@@ -5,12 +5,36 @@ function App() {
   const [value, setValue] = useState(0);
   const [timer, setTimer] = useState(0);
   const timerID = useRef(0);
+
+  let startDate = null;
+  let currDate = null;
+
+  const makeAnimationStep = () => {
+    if (startDate === null) {
+      startDate = Date.now();
+      timerID.current = requestAnimationFrame(() => {
+        makeAnimationStep();
+      });
+    } else {
+      currDate = Date.now();
+      if (Math.abs(currDate - startDate - 1000) < 10) {
+        setTimer((prev) => {
+          startDate = null;
+          cancelAnimationFrame(timerID.current);
+          return prev - 1 > 0 ? prev - 1 : 0;
+        });
+      } else {
+        timerID.current = requestAnimationFrame(() => {
+          makeAnimationStep();
+        });
+      }
+    }
+  };
+
   useEffect(() => {
-    timerID.current = setTimeout(() => {
-      setTimer((prev) => (prev - 1 > 0 ? prev - 1 : 0));
-      clearTimeout(timerID);
-    }, 1000);
+    makeAnimationStep();
   }, [timer]);
+
   const handleChange = (e) => {
     const nums = e.target.value
       .split("")
@@ -18,11 +42,13 @@ function App() {
       .join("");
     setValue(+nums);
   };
+
   const handleClick = () => {
-    clearTimeout(timerID.current);
+    cancelAnimationFrame(timerID.current);
     setTimer(value);
     setValue(0);
   };
+
   const showTimer = () => {
     const hours = Math.floor(timer / 3600);
     const mins = Math.floor((timer - hours * 3600) / 60);
@@ -32,6 +58,7 @@ function App() {
     const ss = secs < 10 ? "0" + secs : secs;
     return hh + ":" + mm + ":" + ss;
   };
+
   return (
     <div className="App">
       <input type="text" value={value} onChange={handleChange} />
